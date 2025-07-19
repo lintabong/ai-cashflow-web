@@ -13,20 +13,17 @@ from telegram.ext import (
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
-from datetime import date
+from datetime import date, datetime
 import json
 import re
-import time
 import logging
 import random
 import string
-import redis
-from datetime import datetime
-from collections import defaultdict
 from constants import *
-import mysql.connector
 from lib.cache import cacheMessage
 from lib.database import DatabaseConnection, InventoryManager, UserManager, User
+
+from helpers.output_message import render_grouped_table
 
 logging.basicConfig(
     level=logging.INFO,
@@ -50,16 +47,6 @@ def generate_random_id(length=10):
 Db = DatabaseConnection()
 Inventory = InventoryManager(Db)
 User_db = UserManager(Db)
-
-# Koneksi ke database
-conn = mysql.connector.connect(
-    host=os.getenv('MYSQL_HOST'),
-    port=os.getenv('MYSQL_PORT'),
-    user=os.getenv('MYSQL_USER'),
-    password=os.getenv('MYSQL_PASSWORD'),
-    database=os.getenv('MYSQL_DATABASE')
-)
-cursor = conn.cursor()
 
 cache_message = cacheMessage()
 
@@ -85,13 +72,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f'Halo {user.username} ID: {user.id}'
     )
 
-# async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     keyboard = [
-#         ["💰 Cek Saldo", "➕ Tambah Transaksi"],
-#         ["📊 Laporan", "⚙️ Pengaturan"]
-#     ]
-#     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-#     await update.message.reply_text("Silakan pilih menu:", reply_markup=reply_markup)
+async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [
+        ["💰 Cek Saldo", "➕ Tambah Transaksi"],
+        ["📊 Laporan", "⚙️ Pengaturan"]
+    ]
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    await update.message.reply_text("Silakan pilih menu:", reply_markup=reply_markup)
 
 async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -130,26 +117,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     User_db.insert_user(user)
 
-    await update.message.reply_text(f"✅ Pendaftaran berhasil, {first_name}!")
-
-def render_grouped_table(data):
-    if not data:
-        return "Tidak ada data transaksi."
-
-    grouped = defaultdict(list)
-    for d in data:
-        grouped[d["date"]].append(d)
-
-    result = ""
-    for tanggal, transaksi in grouped.items():
-        result += f"📅 Tanggal {tanggal}:\n"
-        result += "```text\n"
-        result += f"| {'Item':<12} | {'Jumlah':>6} | {'Satuan':<8} | {'Tipe':<8} |\n"
-        result += f"|{'-'*14}|{'-'*8}|{'-'*10}|{'-'*10}|\n"
-        for d in transaksi:
-            result += f"| {d['activityName']:<12} | {d['quantity']:>6} | {d['unit']:<8} | {d['flowType']:<8} |\n"
-        result += "```\n\n"
-    return result
+    await update.message.reply_text(f'✅ Pendaftaran berhasil, {first_name}!')
 
 # Handler untuk pesan teks biasa
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -192,6 +160,11 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif parsed_data['intent'] == 'TANYA_SALDO':
         await update.message.reply_text(f'Saldo kamu Rp. {me.balance}')
         return
+    
+    elif parsed_data['intent'] == 'LAINNYA':
+        response_text = normal(user_id, parsed_data)
+        await update.message.reply_text(response_text)
+        return
 
     await update.message.reply_text(parsed_data['intent'])
     return
@@ -221,12 +194,13 @@ def transaction(user_id, parsed_data):
                 row = types.Content(role=row['role'], parts=[types.Part.from_text(text=row['text'])])
                 history.append(row)
 
-    chat = model_chat(GEMINI_SYSTEM_INSTRUCTION_PARSE, history if len(history) > 0 else None)
+    chat = model_chat(
+        GEMINI_SYSTEM_INSTRUCTION_PARSE.replace('{d}', str(datetime.now().replace(microsecond=0))), 
+        history if len(history) > 0 else None
+    )
 
     cache_message.save_message(user_id, parsed_data['message'], 'user')
-
     response = chat.send_message(parsed_data['message'])
-
     cache_message.save_message(user_id, response.text, 'model')
 
     return response.text
@@ -240,12 +214,10 @@ def normal(user_id, parsed_data):
                 row = types.Content(role=row['role'], parts=[types.Part.from_text(text=row['text'])])
                 history.append(row)
 
-    chat = model_chat('Kamu adalah bot AI untuk input output cashflow, kamu menjaawab pertanyaan dengan singkat', history if len(history) > 0 else None)
+    chat = model_chat(GEMINI_SYSTEM_INSTRUCTION_NORMAL, history if len(history) > 0 else None)
 
     cache_message.save_message(user_id, parsed_data['message'], 'user')
-
     response = chat.send_message(parsed_data['message'])
-
     cache_message.save_message(user_id, response.text, 'model')
 
     return response.text
