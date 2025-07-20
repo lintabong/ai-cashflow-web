@@ -22,8 +22,8 @@ class CashflowManager:
         """Insert cashflow ke database"""
         query = """
         INSERT INTO cashflow 
-        (id, userId, transactionDate, activityName, description, category, 
-         quantity, unit, flowType, isActive, price, total, profit)
+        (id, userId, walletId, transactionDate, activityName, description, categoryId, 
+         quantity, unit, flowType, isActive, price, total)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         
@@ -31,9 +31,9 @@ class CashflowManager:
             conn = self.db.get_connection()
             cursor = conn.cursor()
             cursor.execute(query, (
-                item.id, item.userId, item.transactionDate, item.activityName,
-                item.description, item.category, item.quantity, item.unit,
-                item.flowType, item.isActive, item.price, item.total, item.profit
+                item.id, item.userId, item.walletId, item.transactionDate, 
+                item.activityName, item.description, item.categoryId, item.quantity, 
+                item.unit, item.flowType, item.isActive, item.price, item.total
             ))
             conn.commit()
             conn.close()
@@ -64,22 +64,69 @@ class CashflowManager:
                 cashflows.append(CashflowItem(
                     id=result['id'],
                     userId=result['userId'],
+                    walletId=result['walletId'],
                     transactionDate=result['transactionDate'],
                     activityName=result['activityName'],
                     description=result['description'],
-                    category=result['category'],
+                    categoryId=result['categoryId'],
                     quantity=result['quantity'],
                     unit=result['unit'],
                     flowType=result['flowType'],
                     isActive=result['isActive'],
                     price=result['price'],
                     total=result['total'],
-                    profit=result['profit'],
                     createdAt=result['createdAt'],
                     updatedAt=result['updatedAt']
                 ))
                 
         except Error as e:
-            logger.info(f"Error get cashflows by date range: {e}")
+            logger.error(f"Error get cashflows by date range: {e}")
+        
+        return cashflows
+    
+    def get_cashflows_by_wallet(self, user_id: str, wallet_id: str, start_date: date = None, end_date: date = None) -> List[CashflowItem]:
+        """Ambil cashflow berdasarkan user ID dan wallet ID dengan optional date range"""
+        base_query = """
+        SELECT * FROM cashflow 
+        WHERE userId = %s AND walletId = %s AND isActive = TRUE 
+        """
+        
+        params = [user_id, wallet_id]
+        
+        if start_date and end_date:
+            base_query += "AND transactionDate BETWEEN %s AND %s "
+            params.extend([start_date, end_date])
+        
+        base_query += "ORDER BY transactionDate DESC"
+        
+        cashflows = []
+        try:
+            conn = self.db.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute(base_query, params)
+            results = cursor.fetchall()
+            conn.close()
+            
+            for result in results:
+                cashflows.append(CashflowItem(
+                    id=result['id'],
+                    userId=result['userId'],
+                    walletId=result['walletId'],
+                    transactionDate=result['transactionDate'],
+                    activityName=result['activityName'],
+                    description=result['description'],
+                    categoryId=result['categoryId'],
+                    quantity=result['quantity'],
+                    unit=result['unit'],
+                    flowType=result['flowType'],
+                    isActive=result['isActive'],
+                    price=result['price'],
+                    total=result['total'],
+                    createdAt=result['createdAt'],
+                    updatedAt=result['updatedAt']
+                ))
+                
+        except Error as e:
+            logger.error(f"Error get cashflows by wallet: {e}")
         
         return cashflows

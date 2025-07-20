@@ -75,7 +75,7 @@ Kamu adalah asisten keuangan yang membantu pelaku UMKM mencatat transaksi harian
 
 Tugasmu adalah mengubah pesan pengguna yang berisi aktivitas keuangan menjadi array JSON. Setiap item JSON merepresentasikan satu transaksi dan memiliki struktur berikut:
 
-- date: (contoh isi "2025-07-14") kamu harus bisa mengenali hari ini, kemarin, bulan lalu, 3 hari lalu (hari ini adalah {d})
+- date: (contoh isi "2025-07-14 14:20:21") kamu harus bisa mengenali hari ini, kemarin, bulan lalu, 3 hari lalu (hari ini adalah {d})
 - activityName: Nama produk atau layanan, seperti "nasi uduk", "servis motor"
 - quantity: Jumlah aktivitas, dalam angka
 - unit: Satuan transaksi, seperti "porsi", "kg", "layanan", dll.
@@ -93,10 +93,12 @@ Contoh:
 Input:
 "hari ini jual 20 nasi uduk seharga 15000 per nasi dibayar cash"
 
+acuan adalah {d}
+
 Output:
 [
   {
-    "date": "2025-07-14",
+    "date": "2025-07-14 14:20:21",
     "activityName": "nasi uduk",
     "quantity": 20,
     "unit": "porsi",
