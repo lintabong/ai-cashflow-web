@@ -14,6 +14,7 @@ from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 from datetime import date, datetime
+from bson import ObjectId
 import json
 import re
 import logging
@@ -21,13 +22,18 @@ import random
 import string
 from constants import *
 from lib.cache import cacheMessage
-from lib.database import DatabaseConnection, InventoryManager, UserManager, User
+
+from lib.database.db import DatabaseConnection
+from lib.database.model.user_model import User
+from lib.database.model.cashflow_model import CashflowItem
+from lib.database.manager.user_manager import UserManager
+from lib.database.manager.cashflow_manager import CashflowManager
 
 from helpers.output_message import render_grouped_table
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
+    format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
@@ -45,10 +51,10 @@ def generate_random_id(length=10):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
 Db = DatabaseConnection()
-Inventory = InventoryManager(Db)
-User_db = UserManager(Db)
+user_manager = UserManager(Db)
+cashflow_manager = CashflowManager(Db)
 
-cache_message = cacheMessage()
+memory = cacheMessage()
 
 client = genai.Client()
 
@@ -89,22 +95,14 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
     last_name = user.last_name or ''
     name = f'{first_name} {last_name}'.strip()
 
-    me = User_db.get_user_by_telegram_id(telegram_id)
+    me = user_manager.get_user_by_telegram_id(telegram_id)
 
     if me:
         await update.message.reply_text(f'⚠️ Kamu sudah terdaftar, {first_name}')
         return
 
-    user_id = generate_random_id(10)
-
-    while True:
-        me = User_db.get_user_by_id(user_id)
-        if not me:
-            break
-        user_id = generate_random_id(10)
-
     user = User(
-        id=user_id,
+        id=str(ObjectId()),
         name=name,
         telegramId=telegram_id,
         password='',
@@ -115,7 +113,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
         isActive=True
     )
     
-    User_db.insert_user(user)
+    user_manager.insert_user(user)
 
     await update.message.reply_text(f'✅ Pendaftaran berhasil, {first_name}!')
 
@@ -125,7 +123,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     telegram_id = user.id
     message = update.message.text.strip()
 
-    me = User_db.get_user_by_telegram_id(telegram_id)
+    me = user_manager.get_user_by_telegram_id(telegram_id)
 
     if not me:
         await update.message.reply_text('Kamu belum terdaftar. Ketik /register')
@@ -175,10 +173,12 @@ async def confirmation_callback_handler(update: Update, context: ContextTypes.DE
 
     telegram_id = update.effective_user.id
 
-    me = User_db.get_user_by_telegram_id(telegram_id)
+    me = user_manager.get_user_by_telegram_id(telegram_id)
     user_id = me.id
 
-    cache_message.clear_user_data(user_id)
+    print(memory.get_context(user_id))
+
+    memory.clear_user_data(user_id)
 
     if query.data == 'confirmed_yes':
         await query.edit_message_text('✅ Data telah disimpan. Terima kasih!')
@@ -187,7 +187,7 @@ async def confirmation_callback_handler(update: Update, context: ContextTypes.DE
 
 def transaction(user_id, parsed_data):
     history = []
-    context = cache_message.get_context(user_id)
+    context = memory.get_context(user_id)
     if context is not None and 'messages' in context:
         if len(context['messages']) >= 2:
             for row in context['messages']:
@@ -199,15 +199,15 @@ def transaction(user_id, parsed_data):
         history if len(history) > 0 else None
     )
 
-    cache_message.save_message(user_id, parsed_data['message'], 'user')
+    memory.save_message(user_id, parsed_data['message'], 'user')
     response = chat.send_message(parsed_data['message'])
-    cache_message.save_message(user_id, response.text, 'model')
+    memory.save_message(user_id, response.text, 'model')
 
     return response.text
 
 def normal(user_id, parsed_data):
     history = []
-    context = cache_message.get_context(user_id)
+    context = memory.get_context(user_id)
     if context is not None and 'messages' in context:
         if len(context['messages']) >= 2:
             for row in context['messages']:
@@ -216,9 +216,9 @@ def normal(user_id, parsed_data):
 
     chat = model_chat(GEMINI_SYSTEM_INSTRUCTION_NORMAL, history if len(history) > 0 else None)
 
-    cache_message.save_message(user_id, parsed_data['message'], 'user')
+    memory.save_message(user_id, parsed_data['message'], 'user')
     response = chat.send_message(parsed_data['message'])
-    cache_message.save_message(user_id, response.text, 'model')
+    memory.save_message(user_id, response.text, 'model')
 
     return response.text
 
