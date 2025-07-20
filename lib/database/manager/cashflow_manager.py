@@ -37,11 +37,11 @@ class CashflowManager:
             ))
             conn.commit()
             conn.close()
-            logging.info(f'Cashflow {item.activityName} berhasil diinsert')
+            logger.info(f'Cashflow {item.activityName} berhasil diinsert')
             return True
             
         except Error as e:
-            logging.error(f'Error insert cashflow: {e}')
+            logger.error(f'Error insert cashflow: {e}')
             return False
         
     def get_cashflows_by_date_range(self, user_id: str, start_date: date, end_date: date) -> List[CashflowItem]:
@@ -80,6 +80,6 @@ class CashflowManager:
                 ))
                 
         except Error as e:
-            print(f"Error get cashflows by date range: {e}")
+            logger.info(f"Error get cashflows by date range: {e}")
         
         return cashflows

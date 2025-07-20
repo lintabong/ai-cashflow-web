@@ -18,16 +18,16 @@ from bson import ObjectId
 import json
 import re
 import logging
-import random
-import string
 from constants import *
 from lib.cache import cacheMessage
 
 from lib.database.db import DatabaseConnection
 from lib.database.model.user_model import User
 from lib.database.model.cashflow_model import CashflowItem
+from lib.database.model.wallet_model import Wallet
 from lib.database.manager.user_manager import UserManager
 from lib.database.manager.cashflow_manager import CashflowManager
+from lib.database.manager.wallet_manager import WalletManager
 
 from helpers.output_message import render_grouped_table
 
@@ -43,16 +43,14 @@ logging.getLogger('telegram.ext._application').setLevel(logging.WARNING)
 
 load_dotenv()
 
+
 BOT_TOKEN = os.getenv('BOT_TELEGRAM_API')
 os.environ['GEMINI_API_KEY'] = os.getenv('GEMINI_API_KEY')
-
-def generate_random_id(length=10):
-    """Generate random alphanumeric ID dengan panjang tertentu"""
-    return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
 Db = DatabaseConnection()
 user_manager = UserManager(Db)
 cashflow_manager = CashflowManager(Db)
+wallet_manager = WalletManager(Db)
 
 memory = cacheMessage()
 
@@ -80,11 +78,45 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
-        ["💰 Cek Saldo", "➕ Tambah Transaksi"],
+        ["💰 Cek Saldo", "/tambah_wallet"],
         ["📊 Laporan", "⚙️ Pengaturan"]
     ]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
     await update.message.reply_text("Silakan pilih menu:", reply_markup=reply_markup)
+
+async def add_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+
+    await update.message.reply_text(f'Halo {user.username} masukkan nama wallet:')
+    return WALLET_NAME
+
+async def get_wallet_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data['wallet_name'] = update.message.text
+
+    await update.message.reply_text(f'Masukkan nominal awal wallet:')
+    return WALLET_BALANCE
+
+async def get_wallet_balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+
+    me = user_manager.get_user_by_telegram_id(user.id)
+
+    wallet = Wallet(
+        id=str(ObjectId()),
+        userId=me.id,
+        name= str(context.user_data['wallet_name']).strip(),
+        description='',
+        balance=float(update.message.text),
+    )
+
+    wallet_manager.insert_wallet(wallet)
+
+    await update.message.reply_text("✅ Wallet berhasil ditambahkan!")
+    return  ConversationHandler.END
+
+async def cancel_add_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Operasi dibatalkan.")
+    return ConversationHandler.END
 
 async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -181,6 +213,22 @@ async def confirmation_callback_handler(update: Update, context: ContextTypes.DE
     memory.clear_user_data(user_id)
 
     if query.data == 'confirmed_yes':
+        cashflow_item = CashflowItem(
+            id=str(ObjectId()),
+            userId=me.id,
+            transactionDate=date.today(),
+            activityName="Test Transaksi",
+            description='',
+            category="Test",
+            quantity=1,
+            unit="unit",
+            flowType="income",
+            isActive=True,
+            price=50000,
+            total=50000,
+            profit=20000
+        )
+        cashflow_manager.insert_cashflow(cashflow_item)
         await query.edit_message_text('✅ Data telah disimpan. Terima kasih!')
     elif query.data == 'confirmed_no':
         await query.edit_message_text('🚫 Data dibatalkan. Silakan kirim ulang input.')
@@ -226,9 +274,21 @@ def normal(user_id, parsed_data):
 if __name__ == '__main__':
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
+    WALLET_NAME, WALLET_BALANCE = range(2)
+    
+    app.add_handler(ConversationHandler(
+    entry_points=[CommandHandler('tambah_wallet', add_wallet)],
+    states={
+        WALLET_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_wallet_name)],
+        WALLET_BALANCE: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_wallet_balance)],
+    },
+    fallbacks=[CommandHandler('cancel', cancel_add_wallet)],
+))
+
     app.add_handler(CommandHandler('start', start))
     app.add_handler(CommandHandler('register', register))
-    # app.add_handler(CommandHandler('menu', menu))
+    app.add_handler(CommandHandler('menu', menu))
+    app.add_handler(CommandHandler('tambah_wallet', add_wallet))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
     app.add_handler(CallbackQueryHandler(confirmation_callback_handler))
 

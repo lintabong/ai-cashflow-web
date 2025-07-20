@@ -28,7 +28,7 @@ Tugasmu adalah mengklasifikasikan maksud dari pesan pengguna ke dalam salah satu
 3. MINTA_LAPORAN
 4. UPDATE_TRANSAKSI
 5. HAPUS_TRANSAKSI
-6. KONFIRMASI_TRANSAKSI
+6. TAMBAH_WALLET
 7. LAINNYA
 
 Balas hanya dalam format JSON seperti ini:
