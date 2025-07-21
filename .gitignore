@@ -5,3 +5,4 @@ __pycache__
 .env
 
 sql/sample_*.sql
+test_*.py

@@ -361,7 +361,7 @@ class TelegramFinanceBot:
         # Add all handlers
         app.add_handler(wallet_conversation)
         app.add_handler(CommandHandler('start', self.start_command))
-        app.add_handler(CommandHandler('register', self.register_command))
+        # app.add_handler(CommandHandler('register', self.register_command))
         app.add_handler(CommandHandler('menu', self.menu_command))
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_text_message))
         app.add_handler(CallbackQueryHandler(self.handle_confirmation_callback))
