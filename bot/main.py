@@ -2,8 +2,8 @@ import logging
 from telegram.ext import CommandHandler as TelegramCommandHandler, MessageHandler as TelegramMessageHandler
 from telegram.ext import CallbackQueryHandler, ConversationHandler, filters
 
-from app.core.bot import BotCore
-from app.config.settings import settings
+from bot.core.bot import BotCore
+from bot.config.settings import settings
 from lib.cache import cacheMessage
 from lib.database.db import DatabaseConnection
 from lib.database.manager.user_manager import UserManager
@@ -11,16 +11,16 @@ from lib.database.manager.cashflow_manager import CashflowManager
 from lib.database.manager.wallet_manager import WalletManager
 
 # Services
-from app.services.ai_service import AIService
-from app.services.user_service import UserService
-from app.services.wallet_service import WalletService
-from app.services.transaction_service import TransactionService
+from bot.services.ai_service import AIService
+from bot.services.user_service import UserService
+from bot.services.wallet_service import WalletService
+from bot.services.transaction_service import TransactionService
 
 # Handlers
-from app.handlers.commands import CommandHandler
-from app.handlers.conversations.wallet import WalletConversationHandler
-from app.handlers.messages import MessageHandler
-from app.handlers.callbacks import CallbackHandler
+from bot.handlers.commands import CommandHandler
+from bot.handlers.conversations.wallet import WalletConversationHandler
+from bot.handlers.messages import MessageHandler
+from bot.handlers.callbacks import CallbackHandler
 
 logger = logging.getLogger(__name__)
 

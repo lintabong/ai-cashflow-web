@@ -5,8 +5,8 @@ from typing import Optional, List, Dict
 from google import genai
 from google.genai import types
 
-from app.config.settings import settings
-from app.config.constants import (
+from bot.config.settings import settings
+from bot.config.constants import (
     GEMINI_SYSTEM_INSTRUCTION_BASE,
     GEMINI_SYSTEM_INSTRUCTION_PARSE,
     GEMINI_SYSTEM_INSTRUCTION_NORMAL

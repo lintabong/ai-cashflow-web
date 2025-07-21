@@ -6,8 +6,8 @@ from bson import ObjectId
 
 from lib.database.model.cashflow_model import CashflowItem
 from lib.database.manager.cashflow_manager import CashflowManager
-from app.services.ai_service import AIService
-from app.services.wallet_service import WalletService
+from bot.services.ai_service import AIService
+from bot.services.wallet_service import WalletService
 
 logger = logging.getLogger(__name__)
 
