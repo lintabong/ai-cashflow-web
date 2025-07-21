@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Wallets - Cashflow App{% endblock %}
+
+{% block content %}
+<div class="wallets">
+    <div class="page-header">
+        <h2>My Wallets</h2>
+        <button class="btn btn-primary">+ Add Wallet</button>
+    </div>
+
+    {% if wallets %}
+        <div class="wallet-grid">
+            {% for wallet in wallets %}
+                <div class="wallet-card">
+                    <h3>{{ wallet.name }}</h3>
+                    {% if wallet.description %}
+                        <p class="wallet-description">{{ wallet.description }}</p>
+                    {% endif %}
+                    <p class="wallet-balance">${{ "%.2f"|format(wallet.balance) }}</p>
+                    <p class="wallet-date">Created: {{ wallet.createdAt.strftime('%Y-%m-%d') }}</p>
+                    <div class="wallet-actions">
+                        <button class="btn btn-small">Edit</button>
+                        <button class="btn btn-small btn-danger">Delete</button>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <p>No wallets found. Create your first wallet to get started!</p>
+            <button class="btn btn-primary">Create First Wallet</button>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

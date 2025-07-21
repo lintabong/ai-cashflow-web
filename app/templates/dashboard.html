@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Cashflow App{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h2>Welcome, {{ user.name }}!</h2>
+    
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Total Balance</h3>
+            <p class="stat-value">${{ "%.2f"|format(user.balance) }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Active Wallets</h3>
+            <p class="stat-value">{{ user.wallets|selectattr('isActive')|list|length }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Recent Transactions</h3>
+            <p class="stat-value">{{ user.cashflows|selectattr('isActive')|list|length }}</p>
+        </div>
+    </div>
+
+    <div class="quick-actions">
+        <h3>Quick Actions</h3>
+        <div class="action-buttons">
+            <a href="{{ url_for('wallet.get_wallets') }}" class="btn btn-secondary">View Wallets</a>
+            <a href="{{ url_for('transaction.get_transactions') }}" class="btn btn-secondary">View Transactions</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

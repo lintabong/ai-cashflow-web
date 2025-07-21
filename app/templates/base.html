@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Cashflow App{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <h1 class="logo"><a href="{{ url_for('main.dashboard') }}">💰 Cashflow</a></h1>
+            {% if current_user.is_authenticated %}
+            <nav class="nav">
+                <a href="{{ url_for('main.dashboard') }}" class="nav-link">Dashboard</a>
+                <a href="{{ url_for('wallet.get_wallets') }}" class="nav-link">Wallets</a>
+                <a href="{{ url_for('transaction.get_transactions') }}" class="nav-link">Transactions</a>
+                <div class="user-menu">
+                    <span class="user-name">{{ current_user.name }}</span>
+                    <a href="{{ url_for('auth.logout') }}" class="nav-link logout">Logout</a>
+                </div>
+            </nav>
+            {% endif %}
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="container">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Cashflow App. Simple finance tracking.</p>
+        </div>
+    </footer>
+</body>
+</html>

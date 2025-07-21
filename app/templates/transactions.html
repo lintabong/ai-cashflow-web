@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Transactions - Cashflow App{% endblock %}
+
+{% block content %}
+<div class="transactions">
+    <div class="page-header">
+        <h2>Transactions</h2>
+        <button class="btn btn-primary">+ Add Transaction</button>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters">
+        <form method="GET" class="filter-form">
+            <div class="filter-group">
+                <label for="start_date">Start Date:</label>
+                <input type="date" id="start_date" name="start_date" value="{{ request.args.get('start_date', '') }}">
+            </div>
+            <div class="filter-group">
+                <label for="end_date">End Date:</label>
+                <input type="date" id="end_date" name="end_date" value="{{ request.args.get('end_date', '') }}">
+            </div>
+            <div class="filter-group">
+                <label for="flow_type">Type:</label>
+                <select id="flow_type" name="flow_type">
+                    <option value="">All</option>
+                    <option value="income" {% if request.args.get('flow_type') == 'income' %}selected{% endif %}>Income</option>
+                    <option value="expense" {% if request.args.get('flow_type') == 'expense' %}selected{% endif %}>Expense</option>
+                    <option value="transfer" {% if request.args.get('flow_type') == 'transfer' %}selected{% endif %}>Transfer</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="wallet_id">Wallet:</label>
+                <select id="wallet_id" name="wallet_id">
+                    <option value="">All Wallets</option>
+                    {% for wallet in wallets %}
+                        <option value="{{ wallet.id }}" {% if request.args.get('wallet_id') == wallet.id %}selected{% endif %}>
+                            {{ wallet.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-secondary">Filter</button>
+            <a href="{{ url_for('transaction.get_transactions') }}" class="btn btn-secondary">Clear</a>
+        </form>
+    </div>
+
+    <!-- Transactions List -->
+    {% if transactions %}
+        <div class="transactions-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Activity</th>
+                        <th>Type</th>
+                        <th>Wallet</th>
+                        <th>Amount</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in transactions %}
+                        <tr>
+                            <td>{{ transaction.transactionDate.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                <strong>{{ transaction.activityName }}</strong>
+                                {% if transaction.description %}
+                                    <br><small>{{ transaction.description }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge badge-{{ transaction.flowType }}">
+                                    {{ transaction.flowType.title() }}
+                                </span>
+                            </td>
+                            <td>{{ transaction.wallet.name }}</td>
+                            <td class="amount {{ 'positive' if transaction.flowType == 'income' else 'negative' }}">
+                                {% if transaction.flowType == 'income' %}+{% elif transaction.flowType == 'expense' %}-{% endif %}${{ "%.2f"|format(transaction.total) }}
+                            </td>
+                            <td>
+                                <button class="btn btn-small">Edit</button>
+                                <button class="btn btn-small btn-danger">Delete</button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <p>No transactions found. Add your first transaction to get started!</p>
+            <button class="btn btn-primary">Add First Transaction</button>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
