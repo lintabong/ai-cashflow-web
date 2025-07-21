@@ -53,7 +53,7 @@ class TelegramFinanceBot:
             self.user_service, self.wallet_service
         )
         self.message_handler = MessageHandler(
-            self.user_service, self.ai_service, self.transaction_service, self.memory
+            self.user_service, self.ai_service, self.transaction_service, self.wallet_service, self.memory
         )
         self.callback_handler = CallbackHandler(
             self.user_service, self.transaction_service, self.memory

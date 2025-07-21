@@ -29,6 +29,9 @@ class WalletService:
         """Get wallet by name for specific user."""
         return self.wallet_manager.get_wallet_by_name(user_id, wallet_name)
     
+    def get_wallets_name_balance_by_user_id(self, user_id):
+        return self.wallet_manager.get_wallets_name_balance_by_user(user_id)
+    
     def update_balance(self, wallet_id: str, new_balance: float) -> bool:
         """Update wallet balance."""
         try:

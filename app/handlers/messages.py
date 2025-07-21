@@ -8,17 +8,19 @@ from app.services.ai_service import AIService
 from app.services.transaction_service import TransactionService
 from app.services.wallet_service import WalletService
 from app.utils.memory_helper import build_history_from_memory
-from helpers.output_message import render_grouped_table
+from helpers.output_message import render_grouped_table, render_wallet_summary
 
 logger = logging.getLogger(__name__)
 
 class MessageHandler(BaseHandler):
     def __init__(self, user_service: UserService, ai_service: AIService, 
-                 transaction_service: TransactionService, memory_cache):
+                 transaction_service: TransactionService, wallet_service:WalletService, 
+                 memory_cache):
         super().__init__(
             user_service=user_service,
             ai_service=ai_service,
-            transaction_service=transaction_service
+            transaction_service=transaction_service,
+            wallet_service=wallet_service
         )
         self.memory = memory_cache
     
@@ -48,7 +50,9 @@ class MessageHandler(BaseHandler):
                 await self._handle_transaction_intent(update, user.id, parsed_data)
                 
             elif parsed_data['intent'] == 'TANYA_SALDO':
-                await update.message.reply_text(f'Saldo kamu Rp. {user.balance}')
+                wallets = self.wallet_service.get_wallets_name_balance_by_user_id(user.id)
+                wallets_json = [{'name': wallet.name, 'balance': wallet.balance} for wallet in wallets]
+                await update.message.reply_text(render_wallet_summary(wallets_json), parse_mode='Markdown')
                 
             elif parsed_data['intent'] == 'LAINNYA':
                 response_text = await self._handle_normal_conversation(user.id, parsed_data)

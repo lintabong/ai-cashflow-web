@@ -100,6 +100,31 @@ class WalletManager:
         
         return wallets
     
+    def get_wallets_name_balance_by_user(self, user_id: str) -> List:
+        """Ambil semua wallet berdasarkan user ID"""
+        query = "SELECT name, balance FROM wallets WHERE userId = %s AND isActive = TRUE ORDER BY name"
+        
+        wallets = []
+        try:
+            conn = self.db.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute(query, (user_id,))
+            results = cursor.fetchall()
+            conn.close()
+            
+            for result in results:
+                wallets.append(Wallet(
+                    id=None,
+                    userId=user_id,
+                    name=result['name'],
+                    balance=result['balance']
+                ))
+                
+        except Error as e:
+            logger.error(f"Error get wallets by user: {e}")
+        
+        return wallets
+    
     def get_wallet_by_name(self, user_id: str, wallet_name: str) -> Optional[Wallet]:
         """Ambil wallet berdasarkan user ID dan nama wallet"""
         query = "SELECT * FROM wallets WHERE userId = %s AND name = %s AND isActive = TRUE"

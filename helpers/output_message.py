@@ -1,4 +1,5 @@
 from collections import defaultdict
+from decimal import Decimal
 
 
 def render_grouped_table(data):
@@ -25,3 +26,23 @@ def render_grouped_table(data):
         result += "```\n\n"
     return result
 
+def render_wallet_summary(wallets):
+    if not wallets:
+        return "Tidak ada data dompet."
+
+    result = ""
+    result += "💼 Ringkasan Dompet:\n"
+    result += ""
+    result += "```text\n"
+    result += f"| {'Nama Dompet':<15} | {'Saldo':>15} |\n"
+    result += f"|{'-'*17}|{'-'*17}|\n"
+    total_balance = Decimal("0.00")
+    for wallet in wallets:
+        name = wallet['name']
+        balance = wallet['balance']
+        total_balance += balance
+        result += f"| {name:<15} | {balance:>15,.2f} |\n"
+    result += f"|{'-'*17}|{'-'*17}|\n"
+    result += f"| {'TOTAL':<15} | {total_balance:>15,.2f} |\n"
+    result += "```\n"
+    return result
