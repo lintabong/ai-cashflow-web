@@ -1,91 +1,65 @@
+
+import os
 import logging
-from telegram.ext import CommandHandler as TelegramCommandHandler, MessageHandler as TelegramMessageHandler
-from telegram.ext import CallbackQueryHandler, ConversationHandler, filters
+from telegram.ext import (
+    ApplicationBuilder, 
+    filters,
+    CommandHandler, 
+    MessageHandler,
+    ConversationHandler,
+    CallbackQueryHandler
+)
+from dotenv import load_dotenv
+from bot.handlers.index import IndexHandler
+from bot.handlers.message_intent import MessageIntent
+from bot.handlers.wallet import WalletHandler
+from bot.handlers.cashflow import CashflowHandler
+from bot.services.llm_model import LLMModel
+from bot.services.cache import CacheMessage
+from bot.config import setup_logging
 
-from bot.core.bot import BotCore
-from bot.config.settings import settings
-from lib.cache import cacheMessage
-from lib.database.db import DatabaseConnection
-from lib.database.manager.user_manager import UserManager
-from lib.database.manager.cashflow_manager import CashflowManager
-from lib.database.manager.wallet_manager import WalletManager
-
-# Services
-from bot.services.ai_service import AIService
-from bot.services.user_service import UserService
-from bot.services.wallet_service import WalletService
-from bot.services.transaction_service import TransactionService
-
-# Handlers
-from bot.handlers.commands import CommandHandler
-from bot.handlers.conversations.wallet import WalletConversationHandler
-from bot.handlers.messages import MessageHandler
-from bot.handlers.callbacks import CallbackHandler
+load_dotenv()
+setup_logging()
 
 logger = logging.getLogger(__name__)
 
 class TelegramFinanceBot:
     def __init__(self):
-        # Initialize core
-        self.bot_core = BotCore()
-        self.bot_core.setup_logging()
-        
-        # Initialize database and managers
-        self.db = DatabaseConnection()
-        self.user_manager = UserManager(self.db)
-        self.cashflow_manager = CashflowManager(self.db)
-        self.wallet_manager = WalletManager(self.db)
-        
-        # Initialize cache
-        self.memory = cacheMessage()
-        
-        # Initialize services
-        self.ai_service = AIService()
-        self.user_service = UserService(self.user_manager)
-        self.wallet_service = WalletService(self.wallet_manager)
-        self.transaction_service = TransactionService(
-            self.ai_service, self.cashflow_manager, self.wallet_service
-        )
-        
-        # Initialize handlers
-        self.command_handler = CommandHandler(self.user_service)
-        self.wallet_conversation_handler = WalletConversationHandler(
-            self.user_service, self.wallet_service
-        )
-        self.message_handler = MessageHandler(
-            self.user_service, self.ai_service, self.transaction_service, self.wallet_service, self.memory
-        )
-        self.callback_handler = CallbackHandler(
-            self.user_service, self.transaction_service, self.memory
-        )
-    
-    def setup_handlers(self, app):
-        """Setup all command and message handlers."""
-        app.add_handler(ConversationHandler(
-            entry_points=[TelegramCommandHandler('tambah_wallet', self.wallet_conversation_handler.start_add_wallet)],
+        self.token = os.getenv('BOT_TELEGRAM_API')
+        self.app = ApplicationBuilder().token(self.token).build()
+
+        self.llm_model = LLMModel()
+        self.cache = CacheMessage()
+
+        self.index_handler = IndexHandler()
+        self.message_intent = MessageIntent(self.llm_model, self.cache)
+        self.wallet_handler = WalletHandler(self.llm_model)
+        self.cashflow_handler = CashflowHandler(self.llm_model, self.cache)
+
+        self._register_handlers()
+
+    def _register_handlers(self):
+        self.app.add_handler(CommandHandler('start', self.index_handler.start))
+        self.app.add_handler(CommandHandler('register', self.index_handler.register))
+        self.app.add_handler(ConversationHandler(
+            entry_points=[CommandHandler('tambah_dompet', self.wallet_handler.start_add_wallet)],
             states={
-                self.wallet_conversation_handler.WALLET_NAME: [
-                    TelegramMessageHandler(filters.TEXT & ~filters.COMMAND, self.wallet_conversation_handler.get_wallet_name)
-                ],
-                self.wallet_conversation_handler.WALLET_BALANCE: [
-                    TelegramMessageHandler(filters.TEXT & ~filters.COMMAND, self.wallet_conversation_handler.get_wallet_balance)
-                ],
+                self.wallet_handler.WALLET_NAME: [
+                    MessageHandler(filters.TEXT & ~filters.COMMAND, 
+                    self.wallet_handler.get_wallet_name)],
+                self.wallet_handler.WALLET_BALANCE: [
+                    MessageHandler(filters.TEXT & ~filters.COMMAND, 
+                    self.wallet_handler.get_wallet_balance)],
             },
-            fallbacks=[TelegramCommandHandler('cancel', self.wallet_conversation_handler.cancel_add_wallet)],
+            fallbacks=[CommandHandler('cancel', self.wallet_handler.cancel_add_wallet)],
         ))
-        app.add_handler(TelegramCommandHandler('start', self.command_handler.start_command))
-        app.add_handler(TelegramCommandHandler('register', self.command_handler.register_command))
-        app.add_handler(TelegramCommandHandler('menu', self.command_handler.menu_command))
-        app.add_handler(TelegramMessageHandler(filters.TEXT & ~filters.COMMAND, self.message_handler.handle_text_message))
-        app.add_handler(CallbackQueryHandler(self.callback_handler.handle_confirmation_callback))
-    
+
+        self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.message_intent.handle))
+        self.app.add_handler(CallbackQueryHandler(self.cashflow_handler.handle_confirmation_callback))
+
     def run(self):
-        """Run the bot."""
-        app = self.bot_core.create_application()
-        self.setup_handlers(app)
-        
-        logger.info("Starting Telegram Finance Bot...")
-        app.run_polling()
+        logger.info('Bot is starting...')
+        self.app.run_polling()
 
 def main():
     bot = TelegramFinanceBot()

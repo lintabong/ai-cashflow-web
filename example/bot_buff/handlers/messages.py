@@ -2,12 +2,12 @@ import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 
-from bot.handlers.base import BaseHandler
-from bot.services.user_service import UserService
-from bot.services.ai_service import AIService
-from bot.services.transaction_service import TransactionService
-from bot.services.wallet_service import WalletService
-from bot.utils.memory_helper import build_history_from_memory
+from bot_buff.handlers.base import BaseHandler
+from bot_buff.services.user_service import UserService
+from bot_buff.services.ai_service import AIService
+from bot_buff.services.transaction_service import TransactionService
+from bot_buff.services.wallet_service import WalletService
+from bot_buff.utils.memory_helper import build_history_from_memory
 from helpers.output_message import render_grouped_table, render_wallet_summary
 
 logger = logging.getLogger(__name__)

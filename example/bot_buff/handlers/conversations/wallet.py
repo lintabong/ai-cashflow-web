@@ -2,9 +2,9 @@ import logging
 from telegram import Update
 from telegram.ext import ContextTypes, ConversationHandler
 
-from bot.handlers.base import BaseHandler
-from bot.services.user_service import UserService
-from bot.services.wallet_service import WalletService
+from bot_buff.handlers.base import BaseHandler
+from bot_buff.services.user_service import UserService
+from bot_buff.services.wallet_service import WalletService
 
 logger = logging.getLogger(__name__)
 

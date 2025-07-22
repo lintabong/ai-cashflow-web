@@ -2,8 +2,8 @@ import logging
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes
 
-from bot.handlers.base import BaseHandler
-from bot.services.user_service import UserService
+from bot_buff.handlers.base import BaseHandler
+from bot_buff.services.user_service import UserService
 
 logger = logging.getLogger(__name__)
 
