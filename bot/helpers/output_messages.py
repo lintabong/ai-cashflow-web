@@ -36,7 +36,7 @@ def render_wallet_summary(wallets):
     result += "```text\n"
     result += f"| {'Nama Dompet':<15} | {'Saldo':>15} |\n"
     result += f"|{'-'*17}|{'-'*17}|\n"
-    total_balance = Decimal("0.00")
+    total_balance = 0
     for wallet in wallets:
         name = wallet['name']
         balance = wallet['balance']

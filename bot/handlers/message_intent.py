@@ -22,7 +22,7 @@ class MessageIntent(BaseHandler):
         self.llm_model = llm_model
         self.cache = cache
         self.cashflow_handler = CashflowHandler(self.llm_model, self.cache)
-        self.wallet_handler = WalletHandler(self.llm_model)
+        self.wallet_handler = WalletHandler(self.llm_model, self.cache)
 
     async def handle(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         telegram_user = update.effective_user
@@ -51,17 +51,19 @@ class MessageIntent(BaseHandler):
                     'username': user.username,
                     'telegramId': user.telegramId,
                     'wallets': [
-                        {'id':wallet.id, 'name': wallet.name, 'balance': wallet.balance}
+                        {'id':wallet.id, 'name': wallet.name, 'balance': float(wallet.balance)}
                         for wallet in user.wallets if wallet.isActive
                     ]
                 }
 
+                self.cache.save_state(telegram_user.id, response['user'])
+
                 if response['intent'] == 'TANYA_WALLET':
-                    await self.wallet_handler.wallet_balance(update, context, response)
+                    await self.wallet_handler.wallet_balance(update, context)
                 elif response['intent'] == 'CATAT_TRANSAKSI':
-                    await self.cashflow_handler.input_cashflow_by_text(update, context, response)
+                    await self.cashflow_handler.input_cashflow_by_text(update, context)
                 else:
-                    await update.message.reply_text("Perintah tidak dikenali.")
+                    await update.message.reply_text('Perintah tidak dikenali.')
             
             except ValueError:
                 await update.message.reply_text('Ada kesalahan di server, ulangi lagi')

@@ -27,11 +27,9 @@ class CashflowHandler(BaseHandler):
         self.llm_model = llm_model
         self.cache = cache
 
-    async def input_cashflow_by_text(self, update: Update, context: ContextTypes.DEFAULT_TYPE, data: dict = None):
+    async def input_cashflow_by_text(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         telegram_user = update.effective_user
         message = update.message.text
-
-        context.user_data['data'] = data
 
         chat = self.llm_model.create_parse_chat_model()
 
@@ -56,10 +54,10 @@ class CashflowHandler(BaseHandler):
         query = update.callback_query
         await query.answer()
 
-        data = context.user_data.get('data')
         telegram_user = update.effective_user
 
         cache = self.cache.get_context(telegram_user.id)
+        data = self.cache.get_state(telegram_user.id)
 
         if not cache or 'messages' not in cache:
             await query.edit_message_text('❌ Error, tolong ulangi promt')
@@ -75,7 +73,7 @@ class CashflowHandler(BaseHandler):
 
         wallet_use, wallet_id = cashflows['text'][0]['wallet'], None
 
-        for row in data['user']['wallets']:
+        for row in data['wallets']:
             if wallet_use.lower() == row['name'].lower():
                 wallet_id = row['id']
                 break
@@ -92,7 +90,7 @@ class CashflowHandler(BaseHandler):
                             
                             cashflow = Cashflow(
                                 id=str(ObjectId()),
-                                userId=data['user']['id'],
+                                userId=data['id'],
                                 walletId=wallet_id,
                                 transactionDate=string_to_datetime(row['date']),
                                 activityName=row['activityName'],

@@ -33,7 +33,7 @@ class TelegramFinanceBot:
 
         self.index_handler = IndexHandler()
         self.message_intent = MessageIntent(self.llm_model, self.cache)
-        self.wallet_handler = WalletHandler(self.llm_model)
+        self.wallet_handler = WalletHandler(self.llm_model, self.cache)
         self.cashflow_handler = CashflowHandler(self.llm_model, self.cache)
 
         self._register_handlers()

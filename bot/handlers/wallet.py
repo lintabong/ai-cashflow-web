@@ -10,6 +10,7 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from bot.services.database import AsyncSessionLocal
 from bot.services.llm_model import LLMModel
+from bot.services.cache import CacheMessage
 from bot.models.user_model import User
 from bot.models.wallet_model import Wallet
 from bot.helpers.output_messages import render_wallet_summary
@@ -18,12 +19,15 @@ logger = logging.getLogger(__name__)
 
 
 class WalletHandler(BaseHandler):
-    def __init__(self, llm_model: LLMModel):
+    def __init__(self, llm_model: LLMModel, cache: CacheMessage):
         self.llm_model = llm_model
+        self.cache = cache
         self.WALLET_NAME, self.WALLET_BALANCE = range(2)
 
-    async def wallet_balance(self, update: Update, context: ContextTypes.DEFAULT_TYPE, response):
-        await update.message.reply_text(render_wallet_summary(response['user']['wallets']), parse_mode='Markdown')
+    async def wallet_balance(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        telegram_user = update.effective_user
+        state = self.cache.get_state(telegram_user.id)
+        await update.message.reply_text(render_wallet_summary(state['wallets']), parse_mode='Markdown')
 
     async def start_add_wallet(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Start wallet addition conversation."""
