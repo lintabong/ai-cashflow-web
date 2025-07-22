@@ -5,3 +5,6 @@ def string_to_datetime(string_date):
 
 def now_as_string():
     return str(datetime.now().replace(microsecond=0))
+
+def now_as_epoch():
+    return int(datetime.now().timestamp())

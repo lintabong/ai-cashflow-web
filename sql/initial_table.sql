@@ -54,3 +54,20 @@ CREATE TABLE wallets (
     INDEX idx_user (userId),
     INDEX idx_name (name)
 );
+
+CREATE TABLE intents (
+    id SERIAL PRIMARY KEY,
+    chat TEXT NOT NULL,
+    response TEXT NOT NULL,
+    isValid BOOLEAN DEFAULT FALSE,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE chats (
+    id SERIAL PRIMARY KEY,
+    chatId INTEGER NOT NULL,
+    role VARCHAR(50) NOT NULL, -- contoh: 'user' atau 'assistant'
+    message TEXT NOT NULL,
+    isValid BOOLEAN DEFAULT FALSE,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

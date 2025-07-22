@@ -15,9 +15,10 @@ from bot.services.cache import CacheMessage
 from bot.models.user_model import User
 from bot.models.cashflow_model import Cashflow
 from bot.models.wallet_model import Wallet
+from bot.models.chat_model import Chat
 from bot.helpers.output_messages import render_wallet_summary, render_grouped_table
 from bot.helpers.text_util import parse_json
-from bot.helpers.date_util import string_to_datetime
+from bot.helpers.date_util import string_to_datetime, now_as_epoch
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +78,24 @@ class CashflowHandler(BaseHandler):
             if wallet_use.lower() == row['name'].lower():
                 wallet_id = row['id']
                 break
+        
+        now = now_as_epoch()
+
+        async with AsyncSessionLocal() as session:
+            async with session.begin():
+                chat_user = Chat(
+                    chatId=now,
+                    role='user',
+                    message=cache['messages'][0]['text'],
+                )
+                chat_bot = Chat(
+                    chatId=now,
+                    role='model',
+                    message=str(cache['messages'][1]['text']),
+                )
+
+                session.add_all([chat_user, chat_bot])
+            await session.commit()
 
         try:
             if query.data == 'cashflow_yes':

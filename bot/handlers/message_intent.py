@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 from bot.services.database import AsyncSessionLocal
 
 from bot.models.user_model import User
+from bot.models.intent_chat_model import Intent
 from bot.handlers.base import BaseHandler
 from bot.handlers.wallet import WalletHandler
 from bot.handlers.cashflow import CashflowHandler
@@ -45,6 +46,14 @@ class MessageIntent(BaseHandler):
 
                 response = chat.send_message(message)
                 response = parse_json(response.text)
+
+                new_intent = Intent(
+                    chat=message,
+                    response=str(response)
+                )
+                session.add(new_intent)
+                await session.flush()
+                await session.commit()
                 
                 response['user'] = {
                     'id': user.id,
