@@ -27,7 +27,38 @@ class WalletHandler(BaseHandler):
     async def wallet_balance(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         telegram_user = update.effective_user
         state = self.cache.get_state(telegram_user.id)
-        await update.message.reply_text(render_wallet_summary(state['wallets']), parse_mode='Markdown')
+        await update.message.reply_text(render_wallet_summary(state['user']['wallets']), parse_mode='Markdown')
+
+    async def add_wallet_from_intent(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        telegram_user = update.effective_user
+        state = self.cache.get_state(telegram_user.id)
+
+        wallet_name_to_add = state['content']['name']
+        wallet_nominal_to_add = state['content']['initialBalance']
+
+        for wallet in state['user']['wallets']:
+            if wallet['name'].lower() == wallet_name_to_add.lower():
+                await update.message.reply_text(f'Wallet {wallet_name_to_add} sudah ada')
+                return
+
+        try:
+            async with AsyncSessionLocal() as session:
+                new_wallet = Wallet(
+                    id=str(ObjectId()),
+                    userId=state['user']['id'],
+                    name=wallet_name_to_add,
+                    balance=wallet_nominal_to_add
+                )
+
+                session.add(new_wallet)
+                await session.commit()
+        except Exception as error:
+            logger.warning(f'Error adding wallet for {telegram_user.id}: {str(error)}')
+            await update.message.reply_text(f'🙏🏻 Maaf, terjadi kesalahan, silakan ulangi prompt')
+            return
+
+        self.cache.clear_user_data(telegram_user.id)
+        await update.message.reply_text(f'✅ Wallet {wallet_name_to_add} berhasil ditambahkan!')
 
     async def start_add_wallet(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Start wallet addition conversation."""

@@ -1,6 +1,7 @@
 
 import logging
 from telegram import Update
+from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
@@ -13,8 +14,7 @@ from bot.handlers.wallet import WalletHandler
 from bot.handlers.cashflow import CashflowHandler
 from bot.services.llm_model import LLMModel
 from bot.services.cache import CacheMessage
-
-from bot.helpers.text_util import parse_json
+from bot.helpers.text_util import markdown_to_html, parse_json
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,6 @@ class MessageIntent(BaseHandler):
                     response=str(response)
                 )
                 session.add(new_intent)
-                await session.flush()
                 await session.commit()
                 
                 response['user'] = {
@@ -65,14 +64,22 @@ class MessageIntent(BaseHandler):
                     ]
                 }
 
-                self.cache.save_state(telegram_user.id, response['user'])
+                self.cache.save_state(telegram_user.id, response)
+
+                logger.info(f'{response["intent"]} | {telegram_user.id} | {message}')
 
                 if response['intent'] == 'TANYA_WALLET':
                     await self.wallet_handler.wallet_balance(update, context)
                 elif response['intent'] == 'CATAT_TRANSAKSI':
                     await self.cashflow_handler.input_cashflow_by_text(update, context)
+                elif response['intent'] == 'TAMBAH_WALLET':
+                    await self.wallet_handler.add_wallet_from_intent(update, context)
+                elif response['intent'] == 'MINTA_LAPORAN':
+                    await update.message.reply_text(markdown_to_html(response['content']), parse_mode=ParseMode.HTML)
+                elif response['intent'] == 'LAINNYA':
+                    await update.message.reply_text(markdown_to_html(response['content']), parse_mode=ParseMode.HTML)
                 else:
                     await update.message.reply_text('Perintah tidak dikenali.')
-            
+
             except ValueError:
                 await update.message.reply_text('Ada kesalahan di server, ulangi lagi')

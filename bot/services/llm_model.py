@@ -9,8 +9,7 @@ from bot.constants import (
     GEMINI_API_KEY,
     GEMINI_SYSTEM_INSTRUCTION_BASE,
     GEMINI_SYSTEM_INSTRUCTION_NORMAL,
-    GEMINI_SYSTEM_INSTRUCTION_PARSE,
-    GEMINI_SYSTEM_INSTRUCTION_VERIFICATION
+    GEMINI_SYSTEM_INSTRUCTION_PARSE
 )
 
 
@@ -20,7 +19,7 @@ class LLMModel:
         self.client = genai.Client()
 
     def create_base_chat_model(self, history: Optional[List] = None):
-        return self.create_chat_model(GEMINI_SYSTEM_INSTRUCTION_BASE, history)
+        return self.create_chat_model(GEMINI_SYSTEM_INSTRUCTION_BASE.replace('{d}', now_as_string()), history)
     
     def create_parse_chat_model(self, history: Optional[List] = None):
         return self.create_chat_model(GEMINI_SYSTEM_INSTRUCTION_PARSE.replace('{d}', now_as_string()), history)
