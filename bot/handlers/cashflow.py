@@ -132,7 +132,7 @@ class CashflowHandler(BaseHandler):
                         result = await session.execute(select(Wallet).where(Wallet.id == wallet_id))
                         wallet = result.scalar_one_or_none()
                         if wallet:
-                            wallet.balance = wallet.balance + total_amount
+                            wallet.balance = wallet.balance - total_amount
                             await session.flush()  # flush ke DB
                     await session.commit()
 
