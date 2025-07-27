@@ -9,6 +9,11 @@ MYSQL_USER = os.getenv('MYSQL_USER')
 MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD')
 MYSQL_DATABASE = os.getenv('MYSQL_DATABASE')
 
+S3_ENDPOINT = os.getenv('S3_ENDPOINT')
+S3_ACCESS_KEY = os.getenv('S3_ACCESS_KEY')
+S3_SECRET_KEY = os.getenv('S3_SECRET_KEY')
+S3_BUCKET = os.getenv('S3_BUCKET')
+
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 GEMINI_MODEL = os.getenv('GEMINI_MODEL')
 
@@ -18,6 +23,29 @@ REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
 REDIS_DATABASE = os.getenv('REDIS_DATABASE')
 
 REDIS_TIME = int(os.getenv('REDIS_SAVE_TIME', 10))
+
+
+GEMINI_SYSTEM_INSTRUCTION_BASE_PHOTO = """
+cobalah untuk parse transaksi dari sebuah struck belanja dengan output seperti json dibawah ini, 
+jika terdapat beberapa item, kamu harus bisa menemukan wallet nya ya
+
+```json
+{
+  "intent": "CATAT_TRANSAKSI",
+  "content": [
+    {
+      "date": "2025-07-14 14:20:21",
+      "activityName": "nasi uduk",
+      "quantity": 20,
+      "unit": "porsi",
+      "flowType": "income",          // flowType: income / expense / transfer
+      "itemType": "product",         // product / service
+      "price": 15000,                //price (angka, null jika tidak disebut)
+      "wallet": "cash"               //wallet (default: cash)
+    }
+  ]
+}
+"""
 
 GEMINI_SYSTEM_INSTRUCTION_BASE = """
 Kamu adalah asisten AI untuk bot cashflow. Tugasmu:

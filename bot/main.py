@@ -11,11 +11,12 @@ from telegram.ext import (
 )
 from dotenv import load_dotenv
 from bot.handlers.index import IndexHandler
-from bot.handlers.message_intent import MessageIntent
+from bot.handlers.base_intent import BaseIntent
 from bot.handlers.wallet import WalletHandler
 from bot.handlers.cashflow import CashflowHandler
 from bot.services.llm_model import LLMModel
 from bot.services.cache import CacheMessage
+from bot.services.image import ImageManager
 from bot.config import setup_logging
 
 load_dotenv()
@@ -30,9 +31,10 @@ class TelegramFinanceBot:
 
         self.llm_model = LLMModel()
         self.cache = CacheMessage()
+        self.image_manager = ImageManager()
 
         self.index_handler = IndexHandler()
-        self.message_intent = MessageIntent(self.llm_model, self.cache)
+        self.base_intent = BaseIntent(self.llm_model, self.cache, self.image_manager)
         self.wallet_handler = WalletHandler(self.llm_model, self.cache)
         self.cashflow_handler = CashflowHandler(self.llm_model, self.cache)
 
@@ -54,7 +56,8 @@ class TelegramFinanceBot:
             fallbacks=[CommandHandler('cancel', self.wallet_handler.cancel_add_wallet)],
         ))
 
-        self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.message_intent.handle))
+        self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.base_intent.handle_message))
+        self.app.add_handler(MessageHandler(filters.PHOTO, self.base_intent.handle_photo))
         self.app.add_handler(CallbackQueryHandler(self.cashflow_handler.handle_confirmation_callback))
 
     def run(self):

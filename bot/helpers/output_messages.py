@@ -1,7 +1,6 @@
 from collections import defaultdict
 from decimal import Decimal
 
-
 def render_grouped_table(data):
     if not data:
         return "Tidak ada data transaksi."
@@ -10,19 +9,29 @@ def render_grouped_table(data):
     for d in data:
         grouped[d["date"]].append(d)
 
+    MAX_ITEM_LEN = 18
     result = ""
     for tanggal, transaksi in grouped.items():
         result += f"📅 Tanggal {tanggal}:\n"
+        result += f"\nTransaksi via: {transaksi[0]['wallet']}\n"
+        result += f"Ket: (o) outcome, (i) income\n"
         result += "```text\n"
-        result += f"| {'Item':<18} | {'Jumlah':>6} | {'Harga':>9} | {'Total':>9} |\n"
-        result += f"|{'-'*20}|{'-'*8}|{'-'*11}|{'-'*11}|\n"
+        result += f"| {'Item':<18} | {'Qty':>3} | {'Harga':>8} | {'Subtotal':>8} |\n"
+        result += f"|{'-'*20}|{'-'*5}|{'-'*10}|{'-'*10}|\n"
         for d in transaksi:
             quantity = d.get("quantity", 0)
             price = d.get("price", 0)
             total = quantity * price
-            flow_label = '(in) ' if d.get('flowType') == 'income' else '(out)' if d.get('flowType') == 'expense' else ''
-            item_label = f"{flow_label} {d['activityName']}"
-            result += f"| {item_label:<18} | {quantity:>6} | {price:>9} | {total:>9} |\n"
+            flow_label = '(i)' if d.get('flowType') == 'income' else '(o)' if d.get('flowType') == 'expense' else ''
+            
+            raw_name = d.get("activityName", "")
+            item_label = f"{flow_label} {raw_name}".strip()
+
+            # Potong jika terlalu panjang
+            if len(item_label) > MAX_ITEM_LEN:
+                item_label = item_label[:MAX_ITEM_LEN - 1] + "…"
+
+            result += f"| {item_label:<18} | {quantity:>3} | {price:>8} | {total:>8} |\n"
         result += "```\n\n"
     return result
 

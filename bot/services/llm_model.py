@@ -7,9 +7,11 @@ from google.genai import types
 from bot.helpers.date_util import now_as_string
 from bot.constants import (
     GEMINI_API_KEY,
+    GEMINI_MODEL,
     GEMINI_SYSTEM_INSTRUCTION_BASE,
     GEMINI_SYSTEM_INSTRUCTION_NORMAL,
-    GEMINI_SYSTEM_INSTRUCTION_PARSE
+    GEMINI_SYSTEM_INSTRUCTION_PARSE,
+    GEMINI_SYSTEM_INSTRUCTION_BASE_PHOTO
 )
 
 
@@ -27,11 +29,23 @@ class LLMModel:
     def create_chat_model(self, instruction: str, history: Optional[List] = None):
         """Create a chat model with given instruction and history."""
         return self.client.chats.create(
-            model='gemini-2.5-flash',
+            model=GEMINI_MODEL,
             config=types.GenerateContentConfig(system_instruction=instruction),
             history=history
         )
-    
+
+    def parse_context_image(self, image_bytes):
+        return self.client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=[
+            types.Part.from_bytes(
+                data=image_bytes,
+                mime_type='image/jpeg',
+            ),
+            GEMINI_SYSTEM_INSTRUCTION_BASE_PHOTO
+            ]
+        )
+
     def parse_json_response(self, text: str) -> Dict:
         """Parse JSON from Gemini response, handling code blocks."""
         clean_text = re.sub(r'^```json\s*|\s*```$', '', text.strip())

@@ -14,18 +14,20 @@ from bot.handlers.wallet import WalletHandler
 from bot.handlers.cashflow import CashflowHandler
 from bot.services.llm_model import LLMModel
 from bot.services.cache import CacheMessage
+from bot.services.image import ImageManager
 from bot.helpers.text_util import markdown_to_html, parse_json
 
 logger = logging.getLogger(__name__)
 
-class MessageIntent(BaseHandler):
-    def __init__(self, llm_model: LLMModel, cache: CacheMessage):
+class BaseIntent(BaseHandler):
+    def __init__(self, llm_model: LLMModel, cache: CacheMessage, image_manager: ImageManager):
         self.llm_model = llm_model
         self.cache = cache
+        self.image_manager = ImageManager
         self.cashflow_handler = CashflowHandler(self.llm_model, self.cache)
         self.wallet_handler = WalletHandler(self.llm_model, self.cache)
 
-    async def handle(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         telegram_user = update.effective_user
         message = update.message.text
 
@@ -83,3 +85,49 @@ class MessageIntent(BaseHandler):
 
             except ValueError:
                 await update.message.reply_text('Ada kesalahan di server, ulangi lagi')
+
+    async def handle_photo(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        telegram_user = update.effective_user
+
+        if not update.message.photo:
+            await update.message.reply_text('Foto tidak masuk, tolong ulangi foto lagi')
+            return
+        
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(User)
+                .options(selectinload(User.wallets))
+                .where(User.telegramId == telegram_user.id)
+            )
+            user = result.scalar_one_or_none()
+
+            if not user:
+                await update.message.reply_text('Kamu belum daftar, daftar dulu dengan mengetik \"/register\"')
+                return
+
+            photo = update.message.photo[-1]
+            file = await context.bot.get_file(photo.file_id)
+
+            file_bytes = await file.download_as_bytearray()
+
+            response = self.llm_model.parse_context_image(file_bytes)
+            response = parse_json(response.text)
+
+            logger.info(f' {response["intent"]} | {telegram_user.id} | By photo input')
+
+            response['user'] = {
+                'id': user.id,
+                'username': user.username,
+                'telegramId': user.telegramId,
+                'wallets': [
+                    {'id':wallet.id, 'name': wallet.name, 'balance': float(wallet.balance)}
+                    for wallet in user.wallets if wallet.isActive
+                ]
+            }
+
+            self.cache.save_state(telegram_user.id, response)
+
+            if response['intent'] == 'CATAT_TRANSAKSI':
+                await self.cashflow_handler.input_cashflow_by_text(update, context)
+            else:
+                await update.message.reply_text('Kesalahan server')
