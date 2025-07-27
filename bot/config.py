@@ -12,5 +12,6 @@ def setup_logging():
     )
 
     # Suppress noisy loggers
-    for log_name in ['httpx', 'telegram.bot', 'telegram.ext._application', 'sqlalchemy.engine']:
+    for log_name in ['httpx', 'telegram.bot', 'telegram.ext._application', 
+                     'sqlalchemy.engine', 'google_genai.models']:
         logging.getLogger(log_name).setLevel(logging.WARNING)
