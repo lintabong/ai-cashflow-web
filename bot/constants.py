@@ -24,6 +24,10 @@ REDIS_DATABASE = os.getenv('REDIS_DATABASE')
 
 REDIS_TIME = int(os.getenv('REDIS_SAVE_TIME', 10))
 
+BOT_RESPONSE_TO_REGISTER = 'Kamu belum daftar, daftar dulu dengan mengetik \"/register\"'
+BOT_RESPONSE_ERROR_SERVER = 'Ada kesalahan di server, ulangi lagi'
+BOT_RESPONSE_INTENT_NOT_FOUND = 'Perintah tidak dikenali.'
+
 
 GEMINI_SYSTEM_INSTRUCTION_BASE_PHOTO = """
 cobalah untuk parse transaksi dari sebuah struck belanja dengan output seperti json dibawah ini, 
@@ -117,8 +121,8 @@ start = {d - 7 hari}, end = {d}
   "intent": "MINTA_LAPORAN",
   "content": {
     "dateRange": {
-      "start": "2025-07-01",
-      "end": "2025-07-22"
+      "start": "2025-07-01 00:00:00",
+      "end": "2025-07-22 00:00:00"
     },
     "flowType": "income",            // atau "expense", atau "transfer", atau null (semua)
     "wallet": "cash",                // atau null (semua wallet)
