@@ -63,6 +63,18 @@ CREATE TABLE intents (
     createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE intents (
+    id SERIAL PRIMARY KEY,
+    userId CHAR(24) NOT NULL,
+    chat TEXT NOT NULL,
+    intent TEXT,
+    response TEXT,
+    inputToken INTEGER,
+    outputToken INTEGER,
+    isValid BOOLEAN DEFAULT FALSE,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE chats (
     id SERIAL PRIMARY KEY,
     chatId INTEGER NOT NULL,
