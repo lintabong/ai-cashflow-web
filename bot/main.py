@@ -35,7 +35,6 @@ class TelegramFinanceBot:
 
         self.index_handler = IndexHandler()
         self.base_intent = BaseIntent(self.llm_model, self.cache, self.image_manager)
-        self.wallet_handler = WalletHandler(self.llm_model, self.cache)
         self.cashflow_handler = CashflowHandler(self.llm_model, self.cache)
 
         self._register_handlers()
@@ -43,19 +42,6 @@ class TelegramFinanceBot:
     def _register_handlers(self):
         self.app.add_handler(CommandHandler('start', self.index_handler.start))
         self.app.add_handler(CommandHandler('register', self.index_handler.register))
-        self.app.add_handler(ConversationHandler(
-            entry_points=[CommandHandler('tambah_dompet', self.wallet_handler.start_add_wallet)],
-            states={
-                self.wallet_handler.WALLET_NAME: [
-                    MessageHandler(filters.TEXT & ~filters.COMMAND, 
-                    self.wallet_handler.get_wallet_name)],
-                self.wallet_handler.WALLET_BALANCE: [
-                    MessageHandler(filters.TEXT & ~filters.COMMAND, 
-                    self.wallet_handler.get_wallet_balance)],
-            },
-            fallbacks=[CommandHandler('cancel', self.wallet_handler.cancel_add_wallet)],
-        ))
-
         self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.base_intent.handle_message))
         self.app.add_handler(MessageHandler(filters.PHOTO, self.base_intent.handle_photo))
         self.app.add_handler(CallbackQueryHandler(self.cashflow_handler.handle_confirmation_callback))

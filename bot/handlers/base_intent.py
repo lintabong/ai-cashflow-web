@@ -19,7 +19,8 @@ from bot.helpers.text_util import markdown_to_html, parse_json
 from bot.constants import (
     BOT_RESPONSE_TO_REGISTER,
     BOT_RESPONSE_ERROR_SERVER,
-    BOT_RESPONSE_INTENT_NOT_FOUND
+    BOT_RESPONSE_INTENT_NOT_FOUND,
+    POSITIVE_KEYWORDS
 )
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,17 @@ class BaseIntent(BaseHandler):
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         telegram_user = update.effective_user
         message = update.message.text
+
+        user_state = self.cache.get_state(telegram_user.id)
+        if user_state:
+            if message in POSITIVE_KEYWORDS:
+                user_state['content']['answer'] = True
+            else:
+                user_state['content']['answer'] = False
+
+            self.cache.save_state(telegram_user.id, user_state)
+            await self._route_intent(user_state, update, context)
+            return 
 
         user = await self._get_user(telegram_user.id)
 
@@ -132,7 +144,7 @@ class BaseIntent(BaseHandler):
 
     async def _route_intent(self, response, update: Update, context: ContextTypes.DEFAULT_TYPE):
         intent = response['intent']
-        
+
         if intent == 'TANYA_WALLET':
             await self.wallet_handler.wallet_balance(update, context)
         elif intent == 'CATAT_TRANSAKSI':
@@ -141,10 +153,15 @@ class BaseIntent(BaseHandler):
             await self.wallet_handler.add_wallet_from_intent(update, context)
         elif intent == 'MINTA_LAPORAN':
             await update.message.reply_text(str(response['content']))
+            self.cache.clear_user_data(update.effective_user.id)
+        elif intent == 'PINDAH_WALLET':
+            await update.message.reply_text(str(response['content']))
+            self.cache.clear_user_data(update.effective_user.id)
         elif intent == 'LAINNYA':
             await update.message.reply_text(
                 markdown_to_html(response['content']), 
                 parse_mode=ParseMode.HTML
             )
+            self.cache.clear_user_data(update.effective_user.id)
         else:
             await update.message.reply_text(BOT_RESPONSE_INTENT_NOT_FOUND)

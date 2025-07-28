@@ -6,7 +6,8 @@ from bot.constants import (
     REDIS_PORT, 
     REDIS_PASSWORD, 
     REDIS_TIME, 
-    REDIS_DATABASE
+    REDIS_DATABASE,
+    REDIS_STATE_EXPIRED_TIME
 )
 from datetime import datetime
 import logging
@@ -94,16 +95,16 @@ class CacheMessage:
         if session_data:
             return json.loads(session_data)
         return None
-    
+
     def save_state(self, user_id, state_data):
         """Simpan state conversation"""
         key = f"user:state:{user_id}"
         self.redis_client.setex(
             key, 
-            REDIS_TIME*60*10,  # 30 menit
+            REDIS_STATE_EXPIRED_TIME*60,  # 60 detik * REDIS_TIME
             json.dumps(state_data)
         )
-    
+
     def get_state(self, user_id):
         """Ambil state conversation"""
         key = f"user:state:{user_id}"

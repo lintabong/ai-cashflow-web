@@ -23,6 +23,7 @@ REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
 REDIS_DATABASE = os.getenv('REDIS_DATABASE')
 
 REDIS_TIME = int(os.getenv('REDIS_SAVE_TIME', 10))
+REDIS_STATE_EXPIRED_TIME = int(os.getenv('REDIS_STATE_EXPIRED_TIME', 2))
 
 BOT_RESPONSE_TO_REGISTER = 'Kamu belum daftar, daftar dulu dengan mengetik \"/register\"'
 BOT_RESPONSE_ERROR_SERVER = 'Ada kesalahan di server, ulangi lagi'
@@ -59,6 +60,7 @@ Kamu adalah asisten AI untuk bot cashflow. Tugasmu:
 - TANYA_WALLET
 - MINTA_LAPORAN
 - TAMBAH_WALLET
+- PINDAH WALLET
 - LAINNYA
 
 2. Jika CATAT_TRANSAKSI, ubah jadi array JSON. Tiap transaksi punya:
@@ -112,6 +114,19 @@ jika TAMBAH_WALLET:
   }
 }
 
+```
+
+jika PINDAH_WALLET:
+```json
+{
+  "intent": "PINDAH_WALLET",
+  "content": {
+    "targetWallet": "",
+    "sourceWallet": "",
+    "nominal": 0,
+    "fee" : 0
+  }
+}
 ```
 
 Jika MINTA_LAPORAN, dan waktu tidak disebut, gunakan:
