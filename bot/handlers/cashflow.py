@@ -30,7 +30,7 @@ class CashflowHandler(BaseHandler):
     async def input_cashflow_by_text(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         telegram_user = update.effective_user
 
-        state = self.cache.get_state(telegram_user.id)
+        state = self.cache.get_context(telegram_user.id)
 
         keyboard = [
                 [
@@ -49,7 +49,7 @@ class CashflowHandler(BaseHandler):
 
         telegram_user = update.effective_user
 
-        state = self.cache.get_state(telegram_user.id)
+        state = self.cache.get_context(telegram_user.id)
 
         wallet_use, wallet_id = state['content'][0]['wallet'], None
 
@@ -108,7 +108,8 @@ class CashflowHandler(BaseHandler):
         except Exception as e:
             logger.error(f'Error handling confirmation: {e}')
             await query.edit_message_text('❌ Terjadi kesalahan saat memproses konfirmasi.')
+            self.cache.clear_context(telegram_user.id)
             return
 
-        self.cache.clear_user_data(telegram_user.id)
+        self.cache.clear_context(telegram_user.id)
         logger.info(f'Success, clear cache {telegram_user.id}')

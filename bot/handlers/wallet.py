@@ -21,13 +21,13 @@ class WalletHandler(BaseHandler):
 
     async def wallet_balance(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         telegram_user = update.effective_user
-        state = self.cache.get_state(telegram_user.id)
-        self.cache.clear_user_data(telegram_user.id)
+        state = self.cache.get_context(telegram_user.id)
+        self.cache.clear_context(telegram_user.id)
         await update.message.reply_text(render_wallet_summary(state['user']['wallets']), parse_mode='Markdown')
 
     async def add_wallet_from_intent(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         telegram_user = update.effective_user
-        state = self.cache.get_state(telegram_user.id)
+        state = self.cache.get_context(telegram_user.id)
 
         wallet_name_to_add = state['content']['name']
         wallet_nominal_to_add = state['content']['initialBalance']
@@ -58,5 +58,5 @@ class WalletHandler(BaseHandler):
                 await update.message.reply_text(f'🙏🏻 Maaf, terjadi kesalahan, silakan ulangi prompt')
         else:
             await update.message.reply_text(f'Baiklah')
-        
-        self.cache.clear_user_data(telegram_user.id)
+
+        self.cache.clear_context(telegram_user.id)
