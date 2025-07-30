@@ -8,11 +8,14 @@ from bot.handlers.base import BaseHandler
 from sqlalchemy.future import select
 from bot.services.database import AsyncSessionLocal
 from bot.models.user_model import User
+from bot.constants import (
+    BOT_RESPONSE_REGISTER_OK
+)
 
 logger = logging.getLogger(__name__)
 
 class IndexHandler(BaseHandler):
-    async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         tg_user = update.effective_user
         async with AsyncSessionLocal() as session:
             result = await session.execute(
@@ -32,14 +35,16 @@ class IndexHandler(BaseHandler):
 
         async with AsyncSessionLocal() as session:
             result = await session.execute(
-                select(User).where(User.telegramId == telegram_user.id)
+                select(User).where(
+                    User.telegramId == telegram_user.id,
+                    User.isActive == True
+                )
             )
             existing_user = result.scalars().first()
 
             if existing_user:
-                if existing_user.isActive:
-                    await update.message.reply_text('Kamu sudah terdaftar dan aktif.')
-                    return
+                await update.message.reply_text('Kamu sudah terdaftar dan aktif.')
+                return
                 
             new_user = User(
                 id=str(ObjectId()),
@@ -53,3 +58,4 @@ class IndexHandler(BaseHandler):
             await update.message.reply_text('Registrasi berhasil! 🎉')
             
         await update.message.reply_text(f'Halo: {telegram_user.username}')
+        await update.message.reply_text(BOT_RESPONSE_REGISTER_OK, parse_mode="Markdown")
